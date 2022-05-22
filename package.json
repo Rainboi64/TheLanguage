@@ -1,14 +1,19 @@
 {
   "devDependencies": {
+    "@types/node": "^17.0.35",
     "typescript": "^4.6.4"
   },
   "name": "thelanguage",
   "version": "1.0.0",
   "description": "a modren programming language based on Arabic characters",
-  "main": "index.tsx",
+  "main": "src/index.ts",
   "scripts": {
+    "start": "ts-node .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "GPL-3.0-or-later"
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "ts-node": "^10.8.0"
+  }
 }
