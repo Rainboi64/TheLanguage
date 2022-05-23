@@ -40,61 +40,19 @@ export default function transpile(tokens: Array<Token>, src: string)
             expectedButFound([type], currentType())
             return false;
         }
-    } 
+    }
 
-
-    while(idx < length)
-    {
-        switch(currentType())
-        {
+    while(idx < length) {
+        switch(currentType()) {
             case TokenType.Var:
-            if(ensureNextIs(TokenType.Identifier))
-            {
-                const name = value(current())
-                if(ensureNextIs(TokenType.Equal))
-                {
-                    next();
-                    switch(currentType())
-                    {
-                        case TokenType.Identifier: 
-                            dictionary[name] = latinize(name);
-                            buffer = `let ${dictionary[name]} = ("${identifier(current())}");`
-                        break;
-                        case TokenType.String:
-                            dictionary[name] = latinize(name);
-                            buffer = `let ${dictionary[name]} = (${string(current())});`
-                        break;
-                        case TokenType.Number:
-                            dictionary[name] = latinize(name);
-                            buffer = `let ${dictionary[name]} = (${number(current())});`
-                        break;
-                        default:
-                            expectedButFound([TokenType.Identifier,  TokenType.String, TokenType.Number], currentType())
-                            break;
-                    }
-                }
-            }
+                variable();
             break;
             case TokenType.Print:
-                next()
-                switch(currentType())
-                {
-                    case TokenType.Identifier: 
-                        buffer = `console.log(${identifier(current())});`
-                    break;
-                    case TokenType.String:
-                        buffer = `console.log(${string(current())});`
-                    break;
-                    
-                    default:
-                        expectedButFound([TokenType.Identifier,  TokenType.String], currentType())
-                        break;
-                }
+                print();
                 break;
 
             default: 
                 break;
-
         }
 
         // reset short buffer
@@ -102,6 +60,51 @@ export default function transpile(tokens: Array<Token>, src: string)
         buffer = "";
 
         next()
+    }
+
+    function print()
+    {
+        next()
+        switch(currentType())
+        {
+            case TokenType.Identifier: 
+                buffer = `console.log(${identifier(current())});`
+            break;
+            case TokenType.String:
+                buffer = `console.log(${string(current())});`
+            break;
+            
+            default:
+                expectedButFound([TokenType.Identifier,  TokenType.String], currentType())
+                break;
+        }
+    }
+
+    function variable()
+    {
+        if(ensureNextIs(TokenType.Identifier)) {
+            const name = value(current())
+            if(ensureNextIs(TokenType.Equal)) {
+                next();
+                switch(currentType()) {
+                    case TokenType.Identifier: 
+                        dictionary[name] = latinize(name);
+                        buffer = `let ${dictionary[name]} = ("${identifier(current())}");`
+                    break;
+                    case TokenType.String:
+                        dictionary[name] = latinize(name);
+                        buffer = `let ${dictionary[name]} = (${string(current())});`
+                    break;
+                    case TokenType.Number:
+                        dictionary[name] = latinize(name);
+                        buffer = `let ${dictionary[name]} = (${number(current())});`
+                    break;
+                    default:
+                        expectedButFound([TokenType.Identifier,  TokenType.String, TokenType.Number], currentType())
+                        break;
+                }
+            }
+        }
     }
 
     function value(token: Token)
