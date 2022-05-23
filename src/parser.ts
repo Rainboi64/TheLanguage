@@ -1,49 +1,6 @@
+import { equal } from "assert";
+import { Message, Token, TokenType } from "./common";
 import { isDigit } from "./util/parser";
-
-export enum TokenType {
-    // One or two character tokens.
-    OpenParen, // ✅
-    CloseParen, // ✅
-    Comma, // ✅
-    Bang, BangEqual,
-    Equal, EqualEqual,
-    Greater, GreaterEqual,
-    Less, LessEqual,
-    And, // ✅ و
-    Or, // ✅ او
-
-    // Literals.
-    Identifier,
-    JSLiteral,
-    String, // ✅
-    Number, // 
-
-    Class, // ✅ نوع
-    Else, // ✅ وإلا
-    False, // ✅ خطأ
-    Fun, // ✅ تابع
-    For, // ✅ لكل
-    If, // ✅ إذا
-    Nil, // ✅ فراغ
-    Print, // ✅ اطبع
-    Return, // ✅ أرجع
-    True, // ✅ صحيح
-    Var, // ✅ شيء
-    While, // ✅ طالما
-    End, // ✅ انتهى
-}
-
-export interface Token {
-    type: TokenType,
-    line: number,
-    start: number,
-    length: number,
-}
-
-export interface Message {
-    type: string,
-    message: string
-}
 
 export default function parse(input: string) {
     let length = input.length;
@@ -52,27 +9,25 @@ export default function parse(input: string) {
     let start = 0;
     let idx = 0;
     
-    const isAtEnd = () => !(idx < length - 1)
+    const isAtEnd = () => !(idx < length)
     const slashZeroIfNull = (val: string) => val ? val : '\0'
 
     const current        = ()          => slashZeroIfNull(input[idx     ])
     const next           = ()          => slashZeroIfNull(input[idx++   ])
     const peek           = ()          => slashZeroIfNull(input[idx +  1])
-    const lookforward    = (i: number) => slashZeroIfNull(input[idx +  i])
-    const jump           = (i: number) => slashZeroIfNull(input[idx += i])
 
     const tokens  : Array<Token>   = []
     const messages: Array<Message> = []
     
-    const token   = (type: TokenType                ) => tokens.push({type: type, line: line, start: start, length: idx - start})
+    const token = (type: TokenType) => tokens.push({type: type, line: line, start: start, length: idx - start})
 
     function pushError(message: string) {
-        messages.push({type: "error", message: message})
+        messages.push({source: "parser", type: "error", message: message, state: {line: line, start: start, length: idx - start}})
         return false
     }
 
     function pushWarning(message: string) {
-        messages.push({type: "warning", message: message})
+        messages.push({source: "parser", type: "warning", message: message, state: {line: line, start: start, length: idx - start}})
     }
 
     const InvalidKeyword = () => pushError("Invalid Keyword");
@@ -105,6 +60,8 @@ export default function parse(input: string) {
 
             switch (current())
             {
+                case '=':
+                    return equal();
                 case '(':
                     return parenRight();
                 case ')':
@@ -156,13 +113,32 @@ export default function parse(input: string) {
             }
         }
 
+        function isDestructive(character: string) {
+            return (character == '\n' || character == '\t' || character == '\r' || character == ' ' || character == '\0');
+        }
+
         function Identifier() {
+            next()
+
+            let oncoming = next();
+            while(!isDestructive(oncoming))
+            {
+                oncoming = next();
+            }
+            
+            idx--;
             token(TokenType.Identifier)
         }
     
+        function equal() {
+            token(TokenType.Equal)
+            next()
+        }
+
         // '"'
         function doubleQuote() {
-            while(next() == '\"' && lookforward(-1) != "\\")
+            next()
+            while(next() != '\"')
             {
                 if(isAtEnd())
                 {
@@ -170,6 +146,8 @@ export default function parse(input: string) {
                 }
             }
             token(TokenType.String)
+
+            next()
         }
 
         function Digit() {

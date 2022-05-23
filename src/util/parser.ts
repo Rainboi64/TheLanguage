@@ -1,4 +1,4 @@
-import { Message, Token, TokenType } from "../parser"
+import { Message, Token, TokenType } from "../common";
 
 export function printParserOutput(input: {
     messages: Message[];
