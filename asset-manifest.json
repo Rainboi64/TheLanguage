@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/thelanguage/static/css/main.6fc94325.css",
+    "main.js": "/thelanguage/static/js/main.faa6ca53.js",
+    "index.html": "/thelanguage/index.html",
+    "main.6fc94325.css.map": "/thelanguage/static/css/main.6fc94325.css.map",
+    "main.faa6ca53.js.map": "/thelanguage/static/js/main.faa6ca53.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6fc94325.css",
+    "static/js/main.faa6ca53.js"
+  ]
+}
