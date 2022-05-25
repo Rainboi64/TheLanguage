@@ -10,20 +10,24 @@ export enum TokenType {
   OpenParen, // ✅
   CloseParen, // ✅
   Comma, // ✅
-  Bang,
-  BangEqual,
+  Bang, // ✅
+  BangEqual, // ✅
   Equal, // ✅
-  EqualEqual,
-  Greater,
-  GreaterEqual,
-  Less,
-  LessEqual,
+  EqualEqual, // ✅
+  Greater, // ✅
+  GreaterEqual, // ✅
+  Less, // ✅
+  LessEqual, // ✅
+  Multiply, // ✅
+  Divide, // ✅
+  Plus, // ✅
+  Minus, // ✅
   And, // ✅ و
   Or, // ✅ او
 
   // Literals.
   Identifier, // ✅
-  JSLiteral,
+  JSLiteral, // ✅
   String, // ✅
   Number, // ✅
 
@@ -40,6 +44,8 @@ export enum TokenType {
   Var, // ✅ شيء
   While, // ✅ طالما
   End, // ✅ انتهى
+
+  EOF,
 }
 
 export interface Token {

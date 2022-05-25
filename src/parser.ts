@@ -1,4 +1,3 @@
-import { equal } from "assert";
 import { Message, Token, TokenType } from "./common";
 import { isDigit } from "./util/parser";
 
@@ -32,21 +31,10 @@ export default function parse(input: string) {
     return false;
   }
 
-  function pushWarning(message: string) {
-    messages.push({
-      source: "parser",
-      type: "warning",
-      message: message,
-      state: { line: line, start: start, length: idx - start },
-    });
-  }
-
-  const InvalidKeyword = () => pushError("Invalid Keyword");
-
   function checkAndPush(rest: string, type: TokenType) {
     for (let index = 0; index < rest.length; index++) {
       next();
-      if (rest[index] != current()) {
+      if (rest[index] !== current()) {
         // backtrack
         idx -= index + 1;
         return false;
@@ -69,11 +57,45 @@ export default function parse(input: string) {
 
       switch (current()) {
         case "=":
+          if (peek() === "=") {
+            next();
+            return equalEqual();
+          }
           return equal();
+        case "!":
+          if (peek() === "=") {
+            next();
+            return bangEqual();
+          }
+          return bang();
+        case "<":
+          if (peek() === "=") {
+            next();
+            return lessEqual();
+          }
+          return less();
+        case ">":
+          if (peek() === "=") {
+            next();
+            return greaterEqual();
+          }
+          return greater();
         case "(":
           return parenRight();
         case ")":
           return parenLeft();
+        case "+":
+          return plus();
+        case "-":
+          if (peek() === "{") {
+            next();
+            return jsLiteral();
+          }
+          return minus();
+        case "*":
+          return multiply();
+        case "\\":
+          return divide();
         case ",":
           return comma();
         case '"':
@@ -100,14 +122,13 @@ export default function parse(input: string) {
             break;
 
           case "/":
-            if (peek() == "/") {
+            if (peek() === "/") {
               // A comment goes until the end of the line.
-              while (peek() != "\n" && !isAtEnd()) next();
+              while (peek() !== "\n" && !isAtEnd()) next();
             } else {
               return;
             }
             break;
-
           default:
             return;
         }
@@ -116,12 +137,32 @@ export default function parse(input: string) {
 
     function isDestructive(character: string) {
       return (
-        character == "\n" ||
-        character == "\t" ||
-        character == "\r" ||
-        character == " " ||
-        character == "\0"
+        character === ")" ||
+        character === "(" ||
+        character === "," ||
+        character === "+" ||
+        character === "-" ||
+        character === "\n" ||
+        character === "\t" ||
+        character === "\r" ||
+        character === " " ||
+        character === "\0"
       );
+    }
+
+    function jsLiteral() {
+      next();
+      while (next() !== "}" && next() !== "-") {
+        if (isAtEnd()) {
+          pushError("Unterminated JS literal");
+          return;
+        }
+      }
+
+      start++;
+      token(TokenType.JSLiteral);
+
+      next();
     }
 
     function Identifier() {
@@ -136,22 +177,77 @@ export default function parse(input: string) {
       token(TokenType.Identifier);
     }
 
+    function plus() {
+      token(TokenType.Plus);
+      next();
+    }
+
+    function minus() {
+      token(TokenType.Minus);
+      next();
+    }
+
+    function multiply() {
+      token(TokenType.Multiply);
+      next();
+    }
+
+    function divide() {
+      token(TokenType.Divide);
+      next();
+    }
+
     function equal() {
       token(TokenType.Equal);
+      next();
+    }
+
+    function equalEqual() {
+      token(TokenType.EqualEqual);
+      next();
+    }
+
+    function greater() {
+      token(TokenType.Greater);
+      next();
+    }
+
+    function greaterEqual() {
+      token(TokenType.GreaterEqual);
+      next();
+    }
+
+    function less() {
+      token(TokenType.Less);
+      next();
+    }
+
+    function lessEqual() {
+      token(TokenType.LessEqual);
+      next();
+    }
+
+    function bang() {
+      token(TokenType.Bang);
+      next();
+    }
+
+    function bangEqual() {
+      token(TokenType.BangEqual);
       next();
     }
 
     // '"'
     function doubleQuote() {
       next();
-      while (next() != '"') {
+
+      while (next() !== '"') {
         if (isAtEnd()) {
           pushError("Unterminated String");
+          return;
         }
       }
       token(TokenType.String);
-
-      next();
     }
 
     function Digit() {
@@ -161,7 +257,7 @@ export default function parse(input: string) {
           return false;
         }
 
-        if (current() == ",") {
+        if (current() === ",") {
           hasDecimalPoint = true;
           return hasDecimalPoint;
         }
@@ -184,13 +280,13 @@ export default function parse(input: string) {
 
     // '('
     function parenLeft() {
-      token(TokenType.OpenParen);
+      token(TokenType.CloseParen);
       next();
     }
 
     // ')'
     function parenRight() {
-      token(TokenType.CloseParen);
+      token(TokenType.OpenParen);
       next();
     }
 
@@ -241,16 +337,18 @@ export default function parse(input: string) {
 
     // 'إ'
     function downHamzaAleph() {
-      if (checkAndPush("ذا ", TokenType.Or)) return true;
-      else false;
+      if (current() === "إ") if (checkAndPush("ذا ", TokenType.Or)) return true;
+      return false;
     }
 
     // 'ا'
     function aleph() {
-      if (checkAndPush("و ", TokenType.Or)) return true;
-      else if (checkAndPush("نتهى ", TokenType.End)) return true;
-      else if (checkAndPush("طبع ", TokenType.Print)) return true;
-      else return false;
+      if (current() === "ا") {
+        if (checkAndPush("و ", TokenType.Or)) return true;
+        else if (checkAndPush("نتهى", TokenType.End)) return true;
+        else if (checkAndPush("طبع ", TokenType.Print)) return true;
+      }
+      return false;
     }
 
     // 'ب'
@@ -260,8 +358,9 @@ export default function parse(input: string) {
 
     // 'ت'
     function taa() {
-      if (checkAndPush("ابع ", TokenType.Fun)) return true;
-      else return false;
+      if (current() === "ت")
+        if (checkAndPush("ابع ", TokenType.Fun)) return true;
+      return false;
     }
 
     // 'ث'
@@ -281,8 +380,9 @@ export default function parse(input: string) {
 
     // 'خ'
     function khaa() {
-      if (checkAndPush("طأ ", TokenType.False)) return true;
-      else return false;
+      if (current() === "خ")
+        if (checkAndPush("طأ ", TokenType.False)) return true;
+      return false;
     }
 
     // 'د'
@@ -307,14 +407,16 @@ export default function parse(input: string) {
 
     // 'ش'
     function sheen() {
-      if (checkAndPush("يء ", TokenType.Var)) return true;
-      else false;
+      if (current() === "ش")
+        if (checkAndPush("يء ", TokenType.Var)) return true;
+      return false;
     }
 
     // 'ص'
     function sad() {
-      if (checkAndPush("حيح ", TokenType.True)) return true;
-      else return false;
+      if (current() === "ص")
+        if (checkAndPush("حيح ", TokenType.True)) return true;
+      return false;
     }
 
     // 'ض'
@@ -324,8 +426,9 @@ export default function parse(input: string) {
 
     // 'ط'
     function ttaa() {
-      if (checkAndPush("الما ", TokenType.While)) return true;
-      else return false;
+      if (current() === "ط")
+        if (checkAndPush("الما ", TokenType.While)) return true;
+      return false;
     }
 
     // 'ظ'
@@ -345,8 +448,9 @@ export default function parse(input: string) {
 
     // 'ف'
     function faa() {
-      if (checkAndPush("راغ ", TokenType.Nil)) return true;
-      else return false;
+      if (current() === "ف")
+        if (checkAndPush("راغ ", TokenType.Nil)) return true;
+      return false;
     }
 
     // 'ق'
@@ -361,8 +465,9 @@ export default function parse(input: string) {
 
     // 'ل'
     function lam() {
-      if (checkAndPush("كل ", TokenType.For)) return true;
-      else return false;
+      if (current() === "ل")
+        if (checkAndPush("كل ", TokenType.For)) return true;
+      return false;
     }
 
     // 'م'
@@ -372,8 +477,9 @@ export default function parse(input: string) {
 
     // 'ن'
     function noon() {
-      if (checkAndPush("وع ", TokenType.Class)) return true;
-      else return false;
+      if (current() === "ن")
+        if (checkAndPush("وع ", TokenType.Class)) return true;
+      return false;
     }
 
     // 'ه'
@@ -383,8 +489,8 @@ export default function parse(input: string) {
 
     // 'و'
     function waw() {
-      if (checkAndPush(" ", TokenType.And)) return true;
-      else return false;
+      if (current() === "و") if (checkAndPush(" ", TokenType.And)) return true;
+      return false;
     }
 
     // 'ي'
@@ -396,6 +502,8 @@ export default function parse(input: string) {
   while (idx < length) {
     parseToken();
   }
+
+  token(TokenType.EOF);
 
   return {
     messages: messages,

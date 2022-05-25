@@ -10,6 +10,7 @@ import {
 import parse from "./thelanguage/parser";
 import transpile from "./thelanguage/transpiler";
 import { dark } from "@mui/material/styles/createPalette";
+import { Message, Token, TokenType } from "./thelanguage/common";
 
 const theme = createTheme({
   palette: dark,
@@ -19,29 +20,86 @@ function App() {
   const [src, setSrc] = useState("");
 
   function ResultBox() {
-    const [result, setResult] = useState("");
+    const [result, setResult] = useState<
+      | {
+          parser: {
+            messages: Message[];
+            tokens: Token[];
+          };
+          transpiler: {
+            src: String[];
+            messages: Message[];
+          };
+        }
+      | undefined
+    >();
 
     useEffect(() => {
-      compile();
-    });
-
-    async function compile() {
-      try {
-        setResult(transpile(parse(src).tokens, src).src.join("\n"));
-      } catch (e) {
-        return "Compilation error";
+      async function effect() {
+        try {
+          const parser = parse(src);
+          const transpiler = transpile(parser.tokens, src);
+          setResult({
+            parser: parser,
+            transpiler: transpiler,
+          });
+        } catch (e) {
+          console.log(e);
+          return;
+        }
       }
+
+      effect();
+    }, [result, setResult]);
+
+    function getMessages() {
+      const parserMessages: Array<string> = [];
+      const transpilerMessages: Array<string> = [];
+
+      result?.parser.messages.forEach((message) => {
+        parserMessages.push(JSON.stringify(message));
+      });
+
+      result?.transpiler.messages.forEach((message) => {
+        transpilerMessages.push(JSON.stringify(message));
+      });
+
+      return `\n ${parserMessages.join("\n")} \n\n ${transpilerMessages.join(
+        "\n"
+      )}\n\n TOKENS:\n ${result?.parser.tokens
+        .map((element) => {
+          return JSON.stringify({
+            type: TokenType[element.type],
+            line: element.line,
+            start: element.start,
+            length: element.length,
+            lexeme: src.slice(element.start, element.start + element.length),
+          });
+        })
+        .join("\n")}`;
     }
 
     return (
-      <TextField
-        dir="rtl"
-        id="outlined-textarea"
-        fullWidth
-        multiline
-        value={result}
-        rows={20}
-      />
+      <Box display="flex" flexDirection="column" flex={1}>
+        <TextField
+          dir="rtl"
+          id="outlined-textarea"
+          fullWidth
+          multiline
+          disabled
+          value={result?.transpiler.src.join("\n")}
+          rows={15}
+        />
+        <TextField
+          dir="rtl"
+          id="outlined-textarea"
+          disabled
+          fullWidth
+          multiline
+          value={getMessages()}
+          rows={4}
+        />
+      </Box>
     );
   }
 
@@ -53,19 +111,21 @@ function App() {
         </Typography>
         <Box sx={{ display: "flex" }}>
           <ResultBox />
-          <TextField
-            dir="rtl"
-            label="اللغة"
-            placeholder="اكتب باللغة!"
-            rows={20}
-            fullWidth
-            multiline
-            onChange={(e) => {
-              setSrc(e.target.value);
-            }}
-          >
-            {src}
-          </TextField>
+          <Box flex={1}>
+            <TextField
+              dir="rtl"
+              label="اللغة"
+              placeholder="اكتب باللغة!"
+              rows={20}
+              fullWidth
+              multiline
+              onChange={(e) => {
+                setSrc(e.target.value);
+              }}
+            >
+              {src}
+            </TextField>
+          </Box>
         </Box>
       </div>
       <Typography align="center" dir="rtl" color="white">
