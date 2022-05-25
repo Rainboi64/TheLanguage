@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/TheLanguage/static/css/main.6fc94325.css",
-    "main.js": "/TheLanguage/static/js/main.faa6ca53.js",
+    "main.js": "/TheLanguage/static/js/main.178aa8ce.js",
     "index.html": "/TheLanguage/index.html",
     "main.6fc94325.css.map": "/TheLanguage/static/css/main.6fc94325.css.map",
-    "main.faa6ca53.js.map": "/TheLanguage/static/js/main.faa6ca53.js.map"
+    "main.178aa8ce.js.map": "/TheLanguage/static/js/main.178aa8ce.js.map"
   },
   "entrypoints": [
     "static/css/main.6fc94325.css",
-    "static/js/main.faa6ca53.js"
+    "static/js/main.178aa8ce.js"
   ]
 }
